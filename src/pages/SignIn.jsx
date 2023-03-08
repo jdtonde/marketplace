@@ -3,12 +3,13 @@ import { Link,useNavigate } from 'react-router-dom'
 import {ReactComponent as ArrowRightIcon} from '../assets/svg/keyboardArrowRightIcon.svg'
 import  visibilityIcon from '../assets/svg/visibilityIcon.svg'
 import {getAuth, signInWithEmailAndPassword} from 'firebase/auth'
-import { async } from '@firebase/util'
 import { toast } from 'react-toastify'
 import OAuth from '../components/OAuth'
 
 
 function SignIn() {
+            //eslint-disable-next-line react-hooks/exhaustive-deps
+
     const [showPassword,setShowPassWord]= useState(false)
 
     const [formData,setFormData]= useState({
@@ -54,7 +55,7 @@ function SignIn() {
             <div className="passwordInput">
                 <input type={showPassword? 'text':'password'} className='passwordInput' placeholder='Password' id='password' value={password
                 } onChange={onChange} />
-                {/* <img src={visibilityIcon} className='showPassword' alt="show password" onClick={()=>setShowPassWord((x)=> !x )} /> */}
+                <img src={visibilityIcon} className='showPassword' alt="show password" onClick={()=>setShowPassWord((x)=> !x )} />
             </div>
             <Link to='/forgot-password' className='forgotPassWordLink'>
                 Forgot Password

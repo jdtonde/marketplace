@@ -1,19 +1,18 @@
 import React from 'react'
 import { useState,useEffect,useRef} from 'react'
 import { getAuth,onAuthStateChanged } from 'firebase/auth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import Spinner from '../components/Spinner'
 import {toast} from 'react-toastify'
 import {getStorage,ref,uploadBytesResumable,getDownloadURL} from 'firebase/storage'
 import { db } from '../firebase.config'
 import {v4 as uuidv4} from 'uuid'
-import {addDoc,collection , serverTimestamp} from 'firebase/firestore'
+import {serverTimestamp, doc, updateDoc,getDoc} from 'firebase/firestore'
 
-export default function CreateListing() {
-            //eslint-disable-next-line react-hooks/exhaustive-deps
-
+export default function EditListing() {
     const [geolocationEnabled, setGeoLocationEnabled]=useState(false)
     const [loading, setLoading] = useState(false)
+    const [listing, setListing] = useState(false)
     const [formData,setFormData]=useState({
         type:'rent',
         name:'',
@@ -35,8 +34,39 @@ export default function CreateListing() {
 
     const auth= getAuth()
     const navigate=useNavigate()
+    const params=useParams()
     const isMounted= useRef(true)
 
+// Redirect if listing is create by an other user
+
+useEffect(()=>{
+    if (listing && listing.userRef !== auth.currentUser.uid){
+        toast.error('It is not created by you ! ')
+        navigate('/')
+    }
+})
+
+
+// Fetch listing to edit
+    useEffect(()=>{
+        setLoading(true)
+        const fetchListing = async() =>{
+            const docRef = doc(db,'listings',params.listingId )
+            const docSnap = await getDoc(docRef)
+            if(docSnap.exists){
+                setListing(docSnap.data())
+                setFormData({...docSnap.data(), address: docSnap.data().location })
+                setLoading(false)
+            }else{
+                navigate('/')
+                toast.error('Listing does not exist !')
+            }
+        }
+    },[params.listingId,navigate])
+
+
+
+    // set userRef to logged in user
     useEffect(()=>{
         if(isMounted){
             onAuthStateChanged(auth,(user)=>{
@@ -51,6 +81,7 @@ export default function CreateListing() {
             isMounted.current = false
         }
 
+        //eslint-disable-next-line react-hooks/exhaustive-deps
 
     },[isMounted])
 
@@ -119,8 +150,6 @@ export default function CreateListing() {
                     case 'running':
                       console.log('Upload is running');
                       break;
-                    default:
-                        break
                   }
                 }, 
                 (error) => {
@@ -161,9 +190,9 @@ export default function CreateListing() {
             //location && (formDataCopy.location = location )
             !formDataCopy.offer && delete formDataCopy.discountedPrice
 
-            const docRef = await addDoc(collection(db,'listings'),formDataCopy)
-
-            
+            //update listing
+            const docRef= doc(db,'listings',params.listingId)
+            await updateDoc (docRef, formDataCopy)
 
             setLoading(false)
 
@@ -207,7 +236,7 @@ export default function CreateListing() {
     return (
     <div className='profile'>
         <header>
-        <p className="pageHeader">Create a Listing</p>
+        <p className="pageHeader">Edit Listing</p>
         </header>
 
         <main>
@@ -310,9 +339,10 @@ export default function CreateListing() {
                         <label className='formLabel'>Images</label>
                         <p className='imagesInfo'> The first image will be the cover (max 6)</p>
                         <input  className='formInputFile' type='file' id='images' onChange={onMutate} maxLength='6' accept='.jpg, .png, .jpeg' multiple required />   
-                     <button className="primaryButton createListingButton "> Create Listing</button>
+                     <button className="primaryButton createListingButton "> Edit Listing</button>
             </form>
         </main>
     </div>
   )
 }
+
